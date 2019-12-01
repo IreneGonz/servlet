@@ -1,0 +1,72 @@
+En src/main/resources metes el codigo sql para crear las tablas que vayas a necesitar (o eso entiendo)
+Voy a intentar crear equipos y jugadores de futbol mismamente
+
+create table IF NOT EXISTS EQUIPO(
+    id identity primary key,
+    nombre varchar(25),
+    
+);
+create table IF NOT EXISTS JUGADOR(
+    id identity primary key,
+	nombre varchar(25),
+	apellido varchar(25),
+    codEquipo int,
+    foreign key (codEquipo) references EQUIPO(id)
+);
+
+Creo tabla EQUIPO si no existe, y le meto un id que es primary key (lo de identity no se que es) y un nombre, que es un varchar de 25.
+Creo tabla JUGADOR si no existe. Tiene un id que es primary key, nombre y apellidos y un codEquipo que es un int. Declaro una clave ajena que es (codEquipo) que hace referencia dentro de EQUIPO al id.
+
+Me voy a src main webapp a index y dentro del <form> meto en <input> el resto de datos que tiene un jugador por ejemplo
+<span>nombre:</span> <input type="text" name="nombre">
+El <span> es para que salga como una especie de titulo. Despues va el input con name="nombre" porque lo usaremos despues
+Dentro del form al final va un input type submit.
+En listado añado el campo numEquipo dentro de un <th> y cambio los nombres de Users a Jugadores que es lo que tengo ahora.
+
+
+COMO VA ESTE TRASTO
+1. Entras en index.jsp porque si, porque debe ser asi
+2.1. En src/main/resources -> scripts -> create.sql tienes que poner el codigo sql que creara las tablas con los campos que quieres:
+
+create table IF NOT EXISTS JUGADOR(
+    id identity primary key,
+	nombre varchar(25),
+	apellido varchar(25),
+    codEquipo int,
+    foreign key (codEquipo) references EQUIPO(id)
+); 
+Hay que indicar el tipo de campo, su longitud si hace falta, la clave primaria y si hay claves ajenas hay que poner a que tabla y campo hacen referencia.
+
+2.2. Te creas tantas clases como tablas vayas a tener, ej jugadores, equipos, partidos...  Le pones los mismos atributos que campos tiene la tabla.
+	Opcion 1: te creas los getter y setter para usarlos despues en el ModelAssembler
+	Opcion 2: no los creas y simplemente haces jugador.nombre = tal
+
+2.3. Te creas un ModelAssembler (Model=Bicho que hayas creado, Jugador en este caso), y le pones que tiene que recibir el parámetro HttpServletRequest request, que es la peticion? de la pagina. Simplemente creas un objeto de la clase Bicho que hayas creado antes y:
+	Opcion 1 con get/set: jugador.setNombre(request.getParameter("nombre"));
+	Opcion 2 sin get/set: jugador.nombre = request.getParameter("nombre");
+En este caso a jugador le he puesto un campo codEquipo que es un int, y el request.getParameter devuelve un string, asi que hay que poner el Integer.parseInt(request.getParameter...
+
+3. index.jsp: en el body tiene que haber un <form method="post"> (el action="welcome" es para que despues te lleve a esa pagina NO QUITARLO obviamente) y dentro de ese form hay un <span> en el que pones lo que vas a mostrar, y despues un <input type="text" (o number, lo que sea) name="nombre por el que luego buscaras el valor en el ModelAssembler"> Y por ultimo un <input type="submit">. Despues del form hay un enlace a Listado.jsp para mostrar el contenido de la bbdd con los datos que se han guardado
+
+
+4.1 Service: es una interfaz con 3 metodos:
+	-public Bicho crearNuevoBicho(HttpServletRequest req)
+	-public void insertBicho(Bicho bicho)
+	-public List<Bicho> listado
+Este Service (ahora no sirve para mucho) se crea para facilitar la organizacion del codigo
+
+4.2 Repository: Es otra interfaz con 4 metodos:
+	-public List<E> listAll();
+	-public E findBy(Integer id);
+	-public void insert(E element);
+	-public void update(E element);
+E es un generico, asi te sirve para Jugadores, Equipos, Bichos... Igual que Service, sirve para organizar codigo
+
+4.3 UserService (JugadorService): es una class que implements el Service que hemos creado antes, por lo que obliga a implementar esos metodos. Tenemos que crear un objeto de la clase JugadorAssembler ya que en esta clase (JugadorService) se crean jugadores, se listan y se actualizan.
+
+4.4 WelcomeServlet: aqui es donde va todo el codigo que hace las peticiones y eso. El metodo del init ni mirarlo. Los metodos doPost y doGet entiendo que se ejecutan solos. En cualquier caso ambos llaman al metodo doAction, que se encarga de crear un nuevo Bicho (jugador en este caso) y de insertarlo. Despues en redirect no tengo npi de que hace y te deriva a la pagina welcome.jsp
+
+4.5 welcome.jsp: dentro del body Solo hay un "Bienvenido" y <%= request.getParameter("nombre") %> para que te salga lo que has escrito en index.jsp
+
+
+PROBAR igual me peta el codigo todo el rato porque le estoy asignando un id al user que NO existe en la tabla en la cual lo estoy relacionando
